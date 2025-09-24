@@ -76,6 +76,30 @@ const OutfitManager: React.FC<OutfitManagerProps> = ({ outfit, updateOutfit, rem
     [outfit.id, updateOutfit]
   );
 
+  const clearDetectionArtifacts = useCallback((prev: Outfit): Partial<Outfit> => {
+    const hasDetectionResults =
+      Boolean(prev.analysisSummary) ||
+      prev.detectedCategories.length > 0 ||
+      prev.confirmedCategories.size > 0 ||
+      prev.ignoredFrames.length > 0 ||
+      prev.shotQueue.length > 0;
+
+    if (!hasDetectionResults && prev.status === OutfitStatus.CONFIGURING) {
+      return {};
+    }
+
+    return {
+      status: OutfitStatus.CONFIGURING,
+      analysisSummary: undefined,
+      detectedCategories: [],
+      confirmedCategories: new Set<ClothingCategory>(),
+      ignoredFrames: [],
+      shotQueue: [],
+      planDiagnostics: undefined,
+      currentShotIndex: 0,
+    };
+  }, []);
+
   const handleAddFrame = useCallback(() => {
     const predictions = buildPredictionArray(draft.selected);
     if (!predictions.length) {
@@ -92,19 +116,20 @@ const OutfitManager: React.FC<OutfitManagerProps> = ({ outfit, updateOutfit, rem
 
     updateOutfit(outfit.id, prev => ({
       referenceFrames: [...prev.referenceFrames, frame],
-      status: prev.status === OutfitStatus.CONFIGURING ? OutfitStatus.CONFIGURING : prev.status,
+      ...clearDetectionArtifacts(prev),
     }));
 
     setDraft(createInitialDraft());
-  }, [draft, outfit.id, updateOutfit]);
+  }, [clearDetectionArtifacts, draft, outfit.id, updateOutfit]);
 
   const handleRemoveFrame = useCallback(
     (frameId: string) => {
       updateOutfit(outfit.id, prev => ({
         referenceFrames: prev.referenceFrames.filter(frame => frame.id !== frameId),
+        ...clearDetectionArtifacts(prev),
       }));
     },
-    [outfit.id, updateOutfit]
+    [clearDetectionArtifacts, outfit.id, updateOutfit]
   );
 
   const handleToggleManualExclusion = useCallback(
@@ -113,9 +138,10 @@ const OutfitManager: React.FC<OutfitManagerProps> = ({ outfit, updateOutfit, rem
         referenceFrames: prev.referenceFrames.map(frame =>
           frame.id === frameId ? { ...frame, manualExclusion: !frame.manualExclusion } : frame
         ),
+        ...clearDetectionArtifacts(prev),
       }));
     },
-    [outfit.id, updateOutfit]
+    [clearDetectionArtifacts, outfit.id, updateOutfit]
   );
 
   const computeShotPlan = useCallback(
