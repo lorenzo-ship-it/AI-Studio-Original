@@ -1,0 +1,5 @@
+{
+  "name": "AI Fashion Studio",
+  "description": "An AI-powered application to analyze fashion outfits, generate a variety of professional shots based on reference images, and organize the final assets for e-commerce and editorial use.",
+  "requestFramePermissions": []
+}
